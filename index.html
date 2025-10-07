@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Device Unlock Services</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for professional look and feel */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8f9fa;
+            /* Initial state for body fade-in */
+            opacity: 0; 
+            animation: fadeIn 0.6s ease-out 0.1s forwards; 
+        }
+        .hero-bg {
+            background-color: #1a1b26; /* Dark navy/blue for premium feel */
+            background-image: linear-gradient(135deg, #1a1b26 0%, #0d121c 100%);
+        }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        /* Payment button hover effect (General interactive elements) */
+        .payment-option { transition: all 0.2s ease-in-out; }
+        .payment-option:hover {
+            box-shadow: 0 8px 15px rgba(0, 123, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* --- Custom Keyframe Animations --- */
+        
+        /* 1. Page Load Fade-In */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 2. Call-to-Action Pulse */
+        @keyframes pulseCta {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+        .animate-pulse-cta {
+            animation: pulseCta 1.5s infinite;
+        }
+
+        /* 3. Smooth transitions for FAQ/How It Works boxes */
+        .transition-lift {
+             transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .transition-lift:hover {
+            transform: translateY(-3px);
+        }
+
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#007bff',
+                        'accent-green': '#28a745',
+                        'dark-bg': '#1a1b26',
+                        'light-bg': '#f8f9fa',
+                        'airtel-red': '#D60017',
+                    }
+                }
+            }
+        }
+
+        // --- Payment Modal Functions ---
+
+        function handleUnlockRequest() {
+            const imei = document.getElementById('imei').value;
+            const email = document.getElementById('email').value;
+            const messageBox = document.getElementById('message-box');
+
+            // 1. Validation
+            if (!imei || !email) {
+                messageBox.innerHTML = '<div class="p-3 bg-red-100 text-red-700 rounded-lg">Please fill in both IMEI and Email.</div>';
+                return;
+            }
+
+            // 2. Store validated data temporarily (simulating form data persistence)
+            // Using localStorage for simplicity in this single-file app
+            localStorage.setItem('tempImei', imei);
+            localStorage.setItem('tempEmail', email);
+
+            // 3. Show the payment modal
+            document.getElementById('paymentModal').classList.remove('hidden');
+            messageBox.innerHTML = ''; // Clear previous message
+        }
+
+        function closeModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+            // Reset modal content for next time
+            document.getElementById('modal-content').innerHTML = getPaymentSelectionHTML();
+        }
+
+        // Helper function to generate image HTML for payment options
+        function getPaymentImage(altText, placeholderUrl) {
+            return `<img src="${placeholderUrl}" alt="${altText}" class="h-auto w-full max-w-[4rem] rounded-md shadow-sm object-contain" />`;
+        }
+
+        function getPaymentSelectionHTML() {
+             return `
+                <h3 class="text-2xl font-bold text-primary-blue mb-6 border-b pb-2">Select Payment Method ($30.00)</h3>
+                
+                <p class="mb-6 text-gray-600">Choose your preferred secure gateway to proceed with the $30.00 service charge.</p>
+
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    
+                    <!-- 1. Visa / MasterCard --><button onclick="selectPaymentMethod('Visa / MasterCard')" class="payment-option p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center">
+                        <div class="h-8 w-8 flex justify-center items-center mb-1">
+                            ${getPaymentImage('Visa Mastercard', 'https://placehold.co/100x40/00579D/ffffff?text=VISA+%2F+MC')}
+                        </div>
+                        <span class="text-sm font-semibold">Credit/Debit Card</span>
+                    </button>
+                    
+                    <!-- 2. PayPal --><button onclick="selectPaymentMethod('PayPal')" class="payment-option p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center">
+                        <div class="h-8 w-8 flex justify-center items-center mb-1">
+                            ${getPaymentImage('PayPal', 'https://placehold.co/100x40/009CDE/ffffff?text=PayPal')}
+                        </div>
+                        <span class="text-sm font-semibold">PayPal</span>
+                    </button>
+                    
+                    <!-- 3. Google Pay --><button onclick="selectPaymentMethod('Google Pay')" class="payment-option p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center">
+                        <div class="h-8 w-8 flex justify-center items-center mb-1">
+                            ${getPaymentImage('Google Pay', 'https://placehold.co/100x40/4285F4/ffffff?text=G+Pay')}
+                        </div>
+                        <span class="text-sm font-semibold">Google Pay</span>
+                    </button>
+
+                    <!-- 4. Mobile Money --><button onclick="selectPaymentMethod('Mobile Money (Generic)')" class="payment-option p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center">
+                        <div class="h-8 w-8 flex justify-center items-center mb-1">
+                            ${getPaymentImage('Mobile Money', 'https://placehold.co/100x40/10B981/ffffff?text=M-Money')}
+                        </div>
+                        <span class="text-sm font-semibold">Mobile Money</span>
+                    </button>
+
+                    <!-- 5. Airtel Money --><button onclick="selectPaymentMethod('Airtel Money')" class="payment-option p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center">
+                        <div class="h-8 w-8 flex justify-center items-center mb-1">
+                            ${getPaymentImage('Airtel Money', 'https://placehold.co/100x40/D60017/ffffff?text=AM+Logo')}
+                        </div>
+                        <span class="text-sm font-semibold">Airtel Money</span>
+                    </button>
+                    
+                    <!-- Placeholder for alignment --><div></div> 
+                </div>
+
+                <div class="mt-6 text-sm text-center text-gray-500">
+                    <p>All payments are processed securely through third-party financial institutions.</p>
+                </div>
+
+                <button onclick="closeModal()" class="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 mt-4 rounded-lg transition duration-150">
+                    Cancel & Go Back
+                </button>
+            `;
+        }
+
+        function selectPaymentMethod(methodName) {
+            const imei = localStorage.getItem('tempImei');
+            const email = localStorage.getItem('tempEmail');
+            const modalContent = document.getElementById('modal-content');
+
+            // Simulate final step of payment processing
+            modalContent.innerHTML = `
+                <h3 class="text-2xl font-bold text-primary-blue mb-4">Finalizing Order...</h3>
+                <p class="mb-4 text-gray-600">You selected: <span class="font-semibold text-dark-bg">${methodName}</span></p>
+                
+                <div class="p-4 bg-yellow-100 text-yellow-700 rounded-lg shadow-lg">
+                    <p class="font-bold">Processing Order for IMEI ${imei}</p>
+                    <p>A simulated payment link for ${methodName} has been generated. Your unlock instructions will be sent to <strong>${email}</strong> within 2 minutes of simulated confirmation.</p>
+                </div>
+
+                <button onclick="closeModal()" class="w-full bg-accent-green hover:bg-green-700 text-white font-bold py-3 mt-6 rounded-lg shadow-md transition duration-300">
+                    CLOSE & CHECK EMAIL
+                </button>
+            `;
+            // Optionally clear temporary storage
+            localStorage.removeItem('tempImei');
+            localStorage.removeItem('tempEmail');
+        }
+        
+        // Initialize modal content and helper functions when the page loads
+        window.onload = function() {
+            document.getElementById('modal-content').innerHTML = getPaymentSelectionHTML();
+        };
+
+    </script>
+</head>
+<body class="bg-light-bg">
+
+    <!-- Header & Hero Section --><header class="hero-bg text-white py-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-3">
+                Global Network & FRP Unlock Services
+            </h1>
+            <p class="lg:text-xl text-gray-300">
+                Unlock your mobile device permanently, safely, and fast—guaranteed.
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Unlock Form Section --><main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 -mt-8">
+        <div class="bg-white p-6 md:p-10 rounded-xl shadow-2xl grid md:grid-cols-2 gap-8 items-center">
+            
+            <!-- Device Display Area --><div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="flex justify-center mb-4">
+                    <!-- 
+                        ACTION REQUIRED: Replace this placeholder URL with the actual URL of your Samsung J3 Star picture.
+                        Example: src="https://example.com/your-samsung-j3-star-image.jpg"
+                    --><img src="SM-J337TZDATMB_Gallery_1.png" 
+                         alt="Samsung J3 Star Phone" 
+                         class="max-h-80 rounded-lg shadow-xl object-contain" />
+                </div>
+                <h2 class="text-2xl font-semibold text-dark-bg mb-1">Samsung Galaxy J3 Star</h2>
+                <p class="text-3xl font-bold text-accent-green mb-4">$30 USD</p>
+                <div class="bg-primary-blue text-white text-sm font-medium py-1 px-3 inline-block rounded-full">
+                    Delivery in ~2 Minutes via Email
+                </div>
+            </div>
+
+            <!-- Unlock Request Form --><div class="md:border-l md:pl-8">
+                <h3 class="text-xl font-bold text-primary-blue mb-6 border-b pb-2">Start Your Unlock Now</h3>
+                
+                <div id="message-box" class="mb-4">
+                    <!-- Dynamic message container --></div>
+
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label for="imei" class="block text-sm font-medium text-gray-700 mb-1">1. Enter 15-Digit IMEI Number</label>
+                        <input type="text" id="imei" placeholder="Dial *#06# to find it" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">2. Confirmation Email Address</label>
+                        <input type="email" id="email" placeholder="code_delivery@example.com" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150" required>
+                    </div>
+                    
+                    <!-- Added animate-pulse-cta class here --><button onclick="handleUnlockRequest()" class="w-full bg-accent-green hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md transition duration-300 transform hover:scale-[1.01] animate-pulse-cta">
+                        UNLOCK DEVICE NOW - $30.00
+                    </button>
+                    
+                    <div class="text-center text-xs text-gray-500 pt-2">
+                        Your payment is secured by SSL encryption.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Methods (Icons replaced with placeholders for easy replacement) --><div class="mt-12 p-6 bg-white rounded-xl shadow-xl">
+            <h3 class="text-2xl font-bold text-dark-bg text-center mb-6">Secure Payment Gateways</h3>
+            <div class="flex flex-wrap justify-center gap-10 sm:gap-10">
+                
+                <!-- 1. Visa / MasterCard (Image Placeholder) --><div class="text-center w-24">
+                    <div class="flex justify-center items-center h-12 w-12 mx-auto mb-1">
+                        <img src="ma_symbol_opt_73_3x.png" alt="Visa Mastercard" class="h-auto w-full max-w-[4rem] rounded-md shadow-sm object-contain" />
+                    </div>
+                    <p class="text-sm font-medium text-gray-800">Visa / MasterCard</p>
+                </div>
+                
+                <!-- 2. PayPal (Image Placeholder) --><div class="text-center w-24">
+                    <div class="flex justify-center items-center h-12 w-12 mx-auto mb-1">
+                        <img src="paypal-seeklogo.png" alt="PayPal" class="h-auto w-full max-w-[4rem] rounded-md shadow-sm object-contain" />
+                    </div>
+                    <p class="text-sm font-medium text-gray-800">PayPal</p>
+                </div>
+                
+        
+
+                <!-- 4. Mobile Money (Image Placeholder) --><div class="text-center w-24">
+                    <div class="flex justify-center items-center h-12 w-12 mx-auto mb-1">
+                         <img src="pngfind.com-mountain-dew-logo-png-280910.png" alt="Mobile Money" class="h-auto w-full max-w-[4rem] rounded-md shadow-sm object-contain" />
+                    </div>
+                    <p class="text-sm font-medium text-gray-800">Mobile Money</p>
+                </div>
+
+                <!-- 5. Airtel Money (Image Placeholder) --><div class="text-center w-24">
+                    <div class="flex justify-center items-center h-12 w-12 mx-auto mb-1">
+                        <img src="airtel-money-tanzania-seeklogo.png" alt="Airtel Money" class="h-auto w-full max-w-[4rem] rounded-md shadow-sm object-contain" />
+                    </div>
+                    <p class="text-sm font-medium text-gray-800">Airtel Money</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- How It Works Section --><section class="mt-16">
+            <h2 class="text-3xl font-bold text-center text-primary-blue mb-10">How Our Network Unlock Works</h2>
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <!-- Step 1 - Added transition-lift for hover animation --><div class="p-6 bg-white rounded-lg shadow-lg transition-lift">
+                    <div class="text-4xl font-extrabold text-primary-blue mb-4">1</div>
+                    <h4 class="text-xl font-semibold mb-3">Provide IMEI & Email</h4>
+                    <p class="text-gray-600">Enter your 15-digit IMEI number and the email address where you want to receive the unlock code.</p>
+                </div>
+                <!-- Step 2 - Added transition-lift for hover animation --><div class="p-6 bg-white rounded-lg shadow-lg transition-lift">
+                    <div class="text-4xl font-extrabold text-primary-blue mb-4">2</div>
+                    <h4 class="text-xl font-semibold mb-3">Secure Payment</h4>
+                    <p class="text-gray-600">Complete the $30 payment using our secure, encrypted gateway. We process requests 24/7.</p>
+                </div>
+                <!-- Step 3 - Added transition-lift for hover animation --><div class="p-6 bg-white rounded-lg shadow-lg transition-lift">
+                    <div class="text-4xl font-extrabold text-primary-blue mb-4">3</div>
+                    <h4 class="text-xl font-semibold mb-3">Receive Code & Unlock</h4>
+                    <p class="text-gray-600">The unlock code and simple instructions are emailed to you. Insert a new SIM, enter the code, and enjoy your unlocked phone!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section --><section class="mt-16">
+            <h2 class="text-3xl font-bold text-center text-primary-blue mb-10">Frequently Asked Questions</h2>
+            <div class="space-y-4 max-w-4xl mx-auto">
+                <!-- FAQ Item 1 --><details class="bg-white p-4 rounded-lg shadow-md cursor-pointer">
+                    <summary class="font-semibold text-dark-bg hover:text-primary-blue transition duration-150">Is this unlock permanent?</summary>
+                    <p class="pt-2 text-gray-600">Yes, our process uses the device's IMEI number to officially register it as unlocked in the manufacturer's database. This is a permanent, factory unlock that survives software updates and factory resets.</p>
+                </details>
+                <!-- FAQ Item 2 --><details class="bg-white p-4 rounded-lg shadow-md cursor-pointer">
+                    <summary class="font-semibold text-dark-bg hover:text-primary-blue transition duration-150">How long does it take?</summary>
+                    <p class="pt-2 text-gray-600">For the Samsung J3 Star, the unlock code is typically generated and sent to your email address within **2 minutes** of successful payment confirmation.</p>
+                </details>
+                <!-- FAQ Item 3 --><details class="bg-white p-4 rounded-lg shadow-md cursor-pointer">
+                    <summary class="font-semibold text-dark-bg hover:text-primary-blue transition duration-150">What if the code doesn't work?</summary>
+                    <p class="pt-2 text-gray-600">In the unlikely event the code does not unlock your phone, please contact our 24/7 support team. We offer a full refund if we cannot unlock your device.</p>
+                </details>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer --><footer class="hero-bg text-gray-400 mt-16 py-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>&copy; 2025 Global Device Solutions. All rights reserved. | <a href="#" class="hover:text-white transition duration-150">Terms of Service</a> | <a href="#" class="hover:text-white transition duration-150">Privacy Policy</a></p>
+            <p class="mt-2 text-xs">Note: This is a third-party unlocking service and is not affiliated with Samsung or any mobile carrier.</p>
+        </div>
+    </footer>
+
+    <!-- Payment Modal (Hidden by Default) --><div id="paymentModal" class="modal-overlay hidden">
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md mx-4 transform transition-all duration-300 relative" id="modal-content">
+            <!-- Content dynamically loaded by getPaymentSelectionHTML() --></div>
+    </div>
+
+</body>
+</html>
